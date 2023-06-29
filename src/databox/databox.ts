@@ -47,9 +47,10 @@ export class DataBox {
     }
   }
 
-  public async put_plain_files(files: File[], is_private: boolean, key_arr?: string[]): Promise<string[]> {
+  public async put_plain_files(files: File[], is_private: boolean, key_arr?: string[], fileTypes?: string[]): Promise<string[]> {
+    if (key_arr && key_arr.length !== files.length) throw new Error("文件数量与key数量不匹配")
+    if (fileTypes && fileTypes.length !== files.length) throw new Error("文件数量与类型数量不匹配")
     try {
-      if (key_arr && key_arr.length !== files.length) throw new Error("文件数量与key数量不匹配")
       const Actor = this.DataBoxActor
       const allPromise: Array<Promise<any>> = []
       const keyArr: string[] = []
@@ -57,6 +58,7 @@ export class DataBox {
         const file = files[i]
         const key = key_arr ? key_arr[i] : nanoid()
         keyArr.push(key)
+        const file_extension = fileTypes ? fileTypes[i] : file.type
         const total_size = file.size
         const total_index = Math.ceil(total_size / chunkSize)
         const allData = await DataBox.FileRead(file)
@@ -64,7 +66,7 @@ export class DataBox {
           const arg: FilePut = {
             PlainFilePut: {
               IC: {
-                file_extension: file.type,
+                file_extension,
                 order: BigInt(i),
                 chunk_number: BigInt(total_index),
                 chunk: {data: allData[i]},
